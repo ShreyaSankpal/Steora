@@ -204,15 +204,61 @@ export interface Itinerary {
 
 export interface BudgetLine {
   category: BudgetCategory;
-  estimated: number;
+
+  /**
+   * Total cost backed by verified pricing.
+   */
+  verified: number;
+
+  /**
+   * Number of items in this category
+   * whose price is unavailable.
+   */
+  unpricedItems: number;
+
   booked: number | null;
 }
 
 export interface BudgetBreakdown {
   currency: CurrencyCode;
+
+  /**
+   * User's maximum trip budget.
+   */
   totalBudget: number;
-  estimatedTotal: number;
+
+  /**
+   * Sum of costs that Steora has actually verified.
+   */
+  verifiedTotal: number;
+
+  /**
+   * Complete trip cost.
+   *
+   * null means Steora does not have enough
+   * verified pricing to calculate it honestly.
+   */
+  estimatedTotal: number | null;
+
+  /**
+   * Percentage of itinerary activities
+   * with verified pricing.
+   */
+  pricingCoverage: number;
+
+  /**
+   * Number of activities without verified pricing.
+   */
+  unpricedActivities: number;
+
+  /**
+   * True only when all itinerary activities
+   * have verified pricing.
+   */
+  isComplete: boolean;
+
   bookedTotal: number | null;
+
   lines: BudgetLine[];
 }
 
@@ -300,5 +346,4 @@ export interface AIItineraryInput {
 
 export interface AIItineraryOutput {
   itinerary: Itinerary;
-  budgetBreakdown: BudgetBreakdown;
 }

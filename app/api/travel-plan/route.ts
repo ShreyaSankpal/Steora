@@ -34,9 +34,12 @@ export async function POST(
     );
   }
 
-  const location =
-    await geocodeDestination(destinationQuery);
+  console.log("STEP 1: Starting geocoding");
 
+const location =
+  await geocodeDestination(destinationQuery);
+
+console.log("STEP 1: Geocoding completed");
   if (!location) {
     return Response.json(
       {
@@ -46,17 +49,25 @@ export async function POST(
     );
   }
 
-  const weather = await getWeather(
-    location.latitude,
-    location.longitude,
-    body.request.startDate,
-    body.request.endDate
-  );
+  console.log("STEP 2: Starting weather");
 
-  const places = await getPlaces(
-    location.latitude,
-    location.longitude
-  );
+const weather = await getWeather(
+  location.latitude,
+  location.longitude,
+  body.request.startDate,
+  body.request.endDate
+);
+
+console.log("STEP 2: Weather completed");
+
+  console.log("STEP 3: Starting places");
+
+const places = await getPlaces(
+  location.latitude,
+  location.longitude
+);
+
+console.log("STEP 3: Places completed");
 
   const normalizedData = normalizeTravelData(
     location,
@@ -64,9 +75,12 @@ export async function POST(
     places
   );
 
-  const travelDataWithRoutes =
-    await calculateTravelTimes(normalizedData);
+  console.log("STEP 4: Starting routing");
 
+const travelDataWithRoutes =
+  await calculateTravelTimes(normalizedData);
+
+console.log("STEP 4: Routing completed");
   /*
    * Step 1:
    * Rank places instead of silently removing them.
@@ -98,12 +112,15 @@ export async function POST(
    * Generate the AI itinerary using the ranked
    * real places.
    */
-  const aiPlan = await generateItinerary({
+  console.log("STEP 5: Starting Gemini");
+
+const aiPlan = await generateItinerary({
     request: body.request,
     weather: travelDataWithRoutes.weather,
     eligiblePlaces: rankedPlaces,
     routing: travelDataWithRoutes.routing,
   });
+  console.log("STEP 5: Gemini completed");
 
   /*
    * Step 4:
@@ -152,10 +169,12 @@ export async function POST(
    * Validate the final known budget.
    */
   const budgetCheck = checkFinalBudget(
-    body.request.budget,
-    budgetBreakdown.estimatedTotal,
-    body.request.currency
-  );
+  body.request.budget,
+  budgetBreakdown.estimatedTotal,
+  budgetBreakdown.verifiedTotal,
+  budgetBreakdown.isComplete,
+  body.request.currency
+);
 
   const finalChecks =
     feasibility.checks.filter(
@@ -299,7 +318,9 @@ function getDayRoutePoints(
 
 function checkFinalBudget(
   budget: number,
-  estimatedTotal: number,
+  estimatedTotal: number | null,
+  verifiedTotal: number,
+  isComplete: boolean,
   currency: string
 ): ConstraintResult {
   if (budget <= 0) {
@@ -312,13 +333,28 @@ function checkFinalBudget(
     };
   }
 
-  if (estimatedTotal > budget) {
+  if (!isComplete) {
+    return {
+      id: "budget",
+      label: "Budget",
+      status: "warning",
+      summary:
+        `Steora has verified ${currency} ${verifiedTotal} ` +
+        `of trip costs, but some prices are unavailable. ` +
+        `The complete trip cost cannot be calculated yet.`,
+    };
+  }
+
+  if (
+    estimatedTotal !== null &&
+    estimatedTotal > budget
+  ) {
     return {
       id: "budget",
       label: "Budget",
       status: "needs_replanning",
       summary:
-        `The known verified trip cost is ${currency} ${estimatedTotal}, ` +
+        `The verified trip cost is ${currency} ${estimatedTotal}, ` +
         `which exceeds your ${currency} ${budget} budget.`,
     };
   }
@@ -328,7 +364,7 @@ function checkFinalBudget(
     label: "Budget",
     status: "valid",
     summary:
-      `The known verified trip cost of ${currency} ${estimatedTotal} ` +
+      `The verified trip cost of ${currency} ${estimatedTotal ?? 0} ` +
       `is within your ${currency} ${budget} budget.`,
   };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import HotelResults from "@/components/hotels/HotelResults";
 import { useEffect, useMemo, useState } from "react";
 import type { Trip } from "@/types/trip";
 import { BudgetBreakdownCard } from "./BudgetBreakdownCard";
@@ -110,6 +111,12 @@ export function TripExperience({ tripId }: { tripId: string }) {
           <ReplanPanel tripId={trip.id} request={trip.request} />
         </div>
       </div>
+      <HotelResults
+        location={destinationName}
+        checkIn={trip.request.startDate}
+        checkOut={trip.request.endDate}
+        guests={trip.request.travelers}
+/>
     </div>
   );
 }

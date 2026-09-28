@@ -3,7 +3,6 @@ import type {
   BudgetBreakdown,
   BudgetCategory,
   BudgetLine,
-  CurrencyCode,
   TripRequest,
 } from "@/types/trip";
 
@@ -11,18 +10,12 @@ import type {
  * Steora budget calculation.
  *
  * Important:
- * We do NOT invent destination-based prices.
- * Only verified activity costs are included as known costs.
- *
- * Costs that are unavailable are tracked separately so the UI
- * can clearly tell the user that the budget is incomplete.
+ * - Never invent prices.
+ * - Only verified activity costs are counted.
+ * - Unknown prices remain explicitly unpriced.
+ * - estimatedTotal is null when the complete trip cost
+ *   cannot be calculated from verified data.
  */
-
-export interface BudgetCalculationResult
-  extends BudgetBreakdown {
-  unpricedActivities: number;
-  pricingCoverage: number;
-}
 
 export function calculateBudgetBreakdown(
   request: TripRequest,
@@ -35,7 +28,7 @@ export function calculateBudgetBreakdown(
       };
     }>;
   }
-): BudgetCalculationResult {
+): BudgetBreakdown {
   const activities = itinerary.days.flatMap((day) => [
     ...day.segments.morning,
     ...day.segments.afternoon,
@@ -54,54 +47,6 @@ export function calculateBudgetBreakdown(
       activity.costStatus === "unavailable"
   ).length;
 
-  const activitiesTotal = pricedActivities.reduce(
-    (total, activity) => total + (activity.cost ?? 0),
-    0
-  );
-
-  const foodTotal = calculateVerifiedCategoryTotal(
-    activities,
-    "food"
-  );
-
-  const transportTotal = calculateVerifiedCategoryTotal(
-    activities,
-    "transport"
-  );
-
-  const lines: BudgetLine[] = [
-    {
-      category: "activities",
-      estimated: activitiesTotal,
-      booked: null,
-    },
-    {
-      category: "food",
-      estimated: foodTotal,
-      booked: null,
-    },
-    {
-      category: "local_transport",
-      estimated: transportTotal,
-      booked: null,
-    },
-    {
-      category: "accommodation",
-      estimated: 0,
-      booked: null,
-    },
-    {
-      category: "other",
-      estimated: 0,
-      booked: null,
-    },
-  ];
-
-  const knownTotal = lines.reduce(
-    (total, line) => total + line.estimated,
-    0
-  );
-
   const pricingCoverage =
     activities.length === 0
       ? 100
@@ -109,38 +54,131 @@ export function calculateBudgetBreakdown(
           (pricedActivities.length / activities.length) * 100
         );
 
+  const lines: BudgetLine[] = [
+    createCategoryLine(
+      activities,
+      "activities"
+    ),
+
+    createCategoryLine(
+      activities,
+      "food"
+    ),
+
+    createCategoryLine(
+      activities,
+      "local_transport"
+    ),
+
+    {
+      category: "accommodation",
+      verified: 0,
+      unpricedItems: 0,
+      booked: null,
+    },
+
+    {
+      category: "other",
+      verified: 0,
+      unpricedItems: 0,
+      booked: null,
+    },
+  ];
+
+  const verifiedTotal = lines.reduce(
+    (total, line) =>
+      total + line.verified,
+    0
+  );
+
+  /**
+   * We only expose a complete estimatedTotal when
+   * every itinerary activity has a verified price.
+   *
+   * Otherwise null prevents the UI from accidentally
+   * presenting the verified subtotal as the full trip cost.
+   */
+  const estimatedTotal =
+    unpricedActivities === 0
+      ? verifiedTotal
+      : null;
+
   return {
-    currency: request.currency as CurrencyCode,
+    currency: request.currency,
     totalBudget: request.budget,
 
-    /*
-     * This is currently the total of VERIFIED costs only.
-     * It must not be presented as the complete trip cost
-     * when some prices are unavailable.
-     */
-    estimatedTotal: knownTotal,
+    verifiedTotal,
+    estimatedTotal,
+
+    pricingCoverage,
+    unpricedActivities,
+
+    isComplete:
+      unpricedActivities === 0,
 
     bookedTotal: null,
-    lines,
 
-    unpricedActivities,
-    pricingCoverage,
+    lines,
   };
 }
 
-function calculateVerifiedCategoryTotal(
+function createCategoryLine(
   activities: Activity[],
-  category: "food" | "transport"
-): number {
-  return activities
+  category: BudgetCategory
+): BudgetLine {
+  const categoryActivities =
+    activities.filter(
+      (activity) =>
+        getBudgetCategory(activity) ===
+        category
+    );
+
+  const verified = categoryActivities
     .filter(
       (activity) =>
-        activity.category === category &&
         activity.cost !== undefined &&
         activity.costStatus === "verified"
     )
     .reduce(
-      (total, activity) => total + (activity.cost ?? 0),
+      (total, activity) =>
+        total + (activity.cost ?? 0),
       0
     );
+
+  const unpricedItems =
+    categoryActivities.filter(
+      (activity) =>
+        activity.cost === undefined ||
+        activity.costStatus ===
+          "unavailable"
+    ).length;
+
+  return {
+    category,
+    verified,
+    unpricedItems,
+    booked: null,
+  };
+}
+
+function getBudgetCategory(
+  activity: Activity
+): BudgetCategory {
+  switch (activity.category) {
+    case "food":
+      return "food";
+
+    case "transport":
+      return "local_transport";
+
+    case "activity":
+    case "culture":
+    case "nature":
+      return "activities";
+
+    case "rest":
+    case "other":
+    default:
+      return "other";
+  }
 }
