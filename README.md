@@ -4,7 +4,7 @@
 
 Steora is an **AI-powered travel planning platform currently in development**.
 
-The project is being built to generate personalized travel itineraries using a combination of **AI, real-world travel data, deterministic planning logic, budget analysis, routing, weather information, and user-defined constraints**.
+The project is being built to generate personalized travel itineraries using a combination of **AI, real-world travel data, determi nistic planning logic, budget analysis, routing, weather information, and user-defined constraints**.
 
 Unlike a simple itinerary generator, Steora is designed to evaluate whether a generated plan actually fits the traveler's requirements before presenting it as a valid plan.
 
