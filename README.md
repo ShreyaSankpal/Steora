@@ -1,346 +1,292 @@
-# ✈️ Steora — AI Travel Planner
+# ✈️ Steora — AI-Powered Travel Planner
 
-> **Plan smarter. Travel better.**
+> **Plan smarter. Travel better. Replan when things change.**
 
-Steora is an **AI-powered travel planning platform currently in development**.
+Steora is an **AI-powered travel planning and replanning platform** that creates personalized itineraries using real travel data, user preferences, budget constraints, weather information, routes, and hotel options.
 
-The project is being built to generate personalized travel itineraries using a combination of **AI, real-world travel data, deterministic planning logic, budget analysis, routing, weather information, and user-defined constraints**.
+Unlike a basic AI itinerary generator, Steora is being designed as a **travel decision and replanning system** — where travelers can understand trade-offs, modify their plans, and generate updated itineraries without starting from scratch.
 
-Unlike a simple itinerary generator, Steora is designed to evaluate whether a generated plan actually fits the traveler's requirements before presenting it as a valid plan.
-
----
-
-## 🚧 Project Status
-
-**🟡 Active Development**
-
-Steora is being developed incrementally. The core travel-planning architecture and several planning services are already implemented, while the product experience and additional integrations are still being developed.
-
-### Current focus
-
-* Improving itinerary generation
-* Making budget handling more intelligent
-* Improving constraint evaluation
-* Integrating reliable travel APIs
-* Improving route and travel-time optimization
-* Building the complete trip experience
+> 🚧 **Status: Actively in development**
 
 ---
 
-## 🎯 Problem
+## 🌍 What Problem Does Steora Solve?
 
-Travel planning usually requires switching between multiple services for:
+Planning a trip usually requires switching between multiple platforms for:
 
-* 📍 Places and attractions
-* 🌦️ Weather
-* 🗺️ Routes and travel times
-* 💰 Budget estimation
-* 🍜 Activities and interests
-* 📅 Daily itinerary planning
+* Finding places to visit
+* Checking weather
+* Estimating travel time
+* Managing a budget
+* Finding hotels
+* Organizing activities
+* Rebuilding the itinerary when plans change
 
-The information exists, but travelers still have to manually combine it and determine whether everything fits together.
+AI itinerary generators can make this easier, but they can also produce unrealistic or invented travel information.
 
-**Steora is being built to bring these planning steps into one system.**
-
----
-
-## 💡 What Steora Is Building
-
-A traveler provides:
-
-* 📍 Destination
-* 📅 Travel dates
-* 👥 Number of travelers
-* 💰 Budget
-* 💱 Currency
-* ❤️ Interests
-* 🧳 Travel style
-* ⏱️ Daily pace
-* 🚗 Maximum travel time
-* ⚙️ Additional preferences
-
-Steora then processes these requirements through its travel-planning pipeline and generates a structured itinerary.
+**Steora focuses on connecting real travel data with AI-powered planning and validation.**
 
 ---
 
-## 🧠 Core Architecture
-
-Steora uses a **hybrid planning approach**.
-
-AI is not responsible for every decision.
-
-Deterministic application logic handles things such as:
-
-* Budget calculations
-* Place filtering
-* Travel-time constraints
-* Route calculations
-* Data normalization
-* Constraint evaluation
-
-The AI layer is then used for itinerary generation and organization.
+## 💡 How Steora Works
 
 ```text
-                    USER INPUT
-                        │
-                        ▼
-              ┌──────────────────┐
-              │   Trip Planner   │
-              └────────┬─────────┘
-                       │
-                       ▼
-              ┌──────────────────┐
-              │ Travel Plan API  │
-              └────────┬─────────┘
-                       │
-          ┌────────────┼────────────┐
-          ▼            ▼            ▼
-       Places       Weather       Routing
-          │            │            │
-          └────────────┼────────────┘
-                       ▼
-              Data Normalization
-                       │
-                       ▼
-              Place Filtering
-                       │
-                       ▼
-              Travel-Time Analysis
-                       │
-                       ▼
-              Budget Calculation
-                       │
-                       ▼
-             Constraint Evaluation
-                       │
-                       ▼
-                AI Generation
-                       │
-                       ▼
-               Final Trip Plan
+User Preferences
+       ↓
+Destination & Dates
+       ↓
+Real Travel Data
+       ↓
+Places + Weather + Routes + Hotels
+       ↓
+Travel Intelligence
+       ↓
+AI Itinerary Generation
+       ↓
+Constraint & Budget Validation
+       ↓
+Personalized Trip
+       ↓
+User Changes Something
+       ↓
+Replanning
+       ↓
+Updated Trip
 ```
 
----
-
-## ⚙️ Engineering Highlights
-
-### Constraint-Aware Planning
-
-Steora evaluates the user's requirements before treating a trip plan as valid.
-
-Constraints include:
-
-* Total budget
-* Maximum travel time
-* Daily pace
-* Travel dates
-* Available places
-* Selected interests
-* Travel preferences
+The goal is to make the itinerary **dynamic rather than static**.
 
 ---
 
-### 💰 Budget Validation
+## ✨ Core Features
 
-The system calculates an estimated trip cost and compares it against the user's selected budget.
+### 🧠 AI Trip Planning
 
-For example:
-
-```text
-Budget:          ₹7,300
-Estimated Cost: ₹29,400
-
-Result:
-needs_replanning
-```
-
-Instead of presenting the itinerary as valid, the system can identify that the current requirements cannot be satisfied and return a **replanning state**.
-
-This is an important part of the planning architecture because an AI-generated response should not automatically be considered a valid travel plan.
-
----
-
-### 📍 Real-World Travel Data
-
-The planning pipeline is being built around external travel data such as:
-
-* Destination geocoding
-* Places
-* Weather
-* Travel times
-* Route geometry
-
-External data is normalized before being passed through the rest of the planning pipeline.
-
----
-
-### 🧮 Deterministic + AI Architecture
-
-Not every travel-planning problem requires AI.
-
-Steora separates responsibilities:
-
-```text
-Deterministic Logic
-├── Budget
-├── Filtering
-├── Travel time
-├── Routes
-├── Constraints
-└── Validation
-
-AI Layer
-└── Itinerary generation and organization
-```
-
-This separation makes the system easier to test, modify, and extend.
-
----
-
-### 🔄 Trip States
-
-Trips use structured planning states such as:
-
-```text
-draft
-planning
-valid
-warning
-needs_replanning
-```
-
-This allows the application to distinguish between an unfinished plan, a valid result, and a plan that violates one or more constraints.
-
----
-
-## ✨ Current Features
-
-### 🧳 Trip Planner
-
-The planner currently supports collecting:
+Steora uses Google Gemini to generate personalized itineraries based on:
 
 * Destination
 * Travel dates
 * Number of travelers
 * Budget
-* Currency
 * Interests
 * Travel style
 * Daily pace
-* Maximum travel time
+* Preferred travel time
+* Additional preferences
 
-### 🤖 Itinerary Generation
-
-The planning pipeline can generate structured daily itinerary data using user preferences and travel information.
-
-### 💰 Budget Analysis
-
-Trip costs are estimated and compared against the user's selected budget.
-
-### 📍 Places Integration
-
-The system retrieves and filters places based on destination and user interests.
-
-### 🌦️ Weather Integration
-
-Weather information is incorporated into the travel-planning pipeline.
-
-### 🗺️ Travel-Time Calculation
-
-Travel time between selected locations is considered when building the plan.
-
-### ⚠️ Constraint Evaluation
-
-The system checks whether the generated planning requirements can realistically satisfy the user's constraints.
+The AI is provided with real travel data rather than being allowed to invent places or travel information.
 
 ---
 
-## 🧪 Example Planning Flow
+### 📍 Real Place Discovery
 
-### Input
+Steora integrates real place data to discover relevant:
+
+* Attractions
+* Restaurants
+* Cafes
+* Markets
+* Parks
+* Museums
+* Cultural locations
+* Adventure activities
+* Photography spots
+
+Places are ranked according to the traveler's preferences and trip requirements.
+
+---
+
+### 💰 Budget-Aware Planning
+
+Steora treats budget as a **planning constraint and decision tool**, rather than silently removing everything that exceeds the budget.
+
+The planned system supports:
+
+* Within-budget options
+* Slightly-over-budget options
+* Premium alternatives
+* Cost breakdowns
+* Verified pricing
+* Unpriced item handling
+* Budget trade-offs
+* Future budget optimization
+
+When reliable pricing is unavailable, Steora does **not invent a price**.
+
+---
+
+### 🗺️ Route & Travel Planning
+
+Steora uses real routing data to calculate:
+
+* Travel distances
+* Travel times
+* Route geometry
+* Activity-to-activity movement
+* Day routes
+
+This allows the itinerary to consider the actual movement between places rather than simply generating a list of attractions.
+
+---
+
+### 🌦️ Weather-Aware Planning
+
+Weather information is incorporated into the travel planning pipeline.
+
+The system can use weather conditions to support future planning decisions such as:
+
+* Outdoor vs indoor activities
+* Rain-aware alternatives
+* Weather-based activity ordering
+* Plan B activities
+
+---
+
+### 🏨 Real Hotel Discovery
+
+Steora currently integrates real hotel search through **Roost + Google Hotels data**.
+
+Hotel results can include:
+
+* Hotel name
+* Platform
+* Nightly price
+* Total price
+* Number of nights
+* Star rating
+* Guest rating
+* Review count
+* Amenities
+* Real hotel photos
+* Listing link
+
+Hotel pricing and availability are retrieved for the requested travel dates.
+
+---
+
+### 🔄 Replanning
+
+One of Steora's main goals is **continuous itinerary replanning**.
+
+Instead of generating a new trip from zero, users should eventually be able to make requests such as:
 
 ```text
-Destination: Mumbai
-Dates: 4 days
-Travelers: 2
-Budget: ₹7,300
-Currency: INR
-Interests:
-- Food
-- Adventure
-- Shopping
-- Nightlife
-- Photography
+"Make this cheaper"
 
-Travel Style: Balanced
-Pace: Moderate
-Maximum Travel Time: 30 minutes
+"Add more food places"
+
+"Remove museums"
+
+"Change Day 2"
+
+"Give me more outdoor activities"
+
+"Reduce travel time"
 ```
 
-### Processing
+Steora can then recalculate the affected parts of the itinerary while preserving the rest of the trip where possible.
+
+---
+
+## 🧩 Architecture
 
 ```text
-User Input
-    ↓
-Destination Geocoding
-    ↓
-Places + Weather Data
-    ↓
-Eligible Place Filtering
-    ↓
-Travel-Time Calculation
-    ↓
-Route Calculation
-    ↓
-Budget Calculation
-    ↓
-Constraint Evaluation
-    ↓
-AI Itinerary Generation
+                         STEORA
+                            │
+             ┌──────────────┴──────────────┐
+             │                             │
+        Frontend                       Backend
+             │                             │
+       Next.js + React              Next.js API Routes
+             │                             │
+             └──────────────┬──────────────┘
+                            │
+                    Travel Intelligence
+                            │
+       ┌────────────┬───────┼────────┬──────────┐
+       │            │       │        │          │
+   Geocoding     Places   Weather  Routing   Hotels
+       │            │       │        │          │
+       └────────────┴───────┴────────┴──────────┘
+                            │
+                     Data Normalization
+                            │
+                       Place Ranking
+                            │
+                  Constraint Evaluation
+                            │
+                     Budget Analysis
+                            │
+                     Route Planning
+                            │
+                     Google Gemini
+                            │
+                    AI Itinerary
+                            │
+                       Validation
+                            │
+                       Trip Result
 ```
-
-### Result
-
-```text
-Status: needs_replanning
-
-Estimated Cost: ₹29,400
-Selected Budget: ₹7,300
-
-Reason:
-The estimated trip cost exceeds the selected budget.
-```
-
-This demonstrates the intended behavior of the planning system: **identify constraint violations instead of blindly returning an itinerary.**
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Technology                 | Purpose                            |
-| -------------------------- | ---------------------------------- |
-| **Next.js**                | Full-stack React framework         |
-| **React**                  | Frontend UI                        |
-| **TypeScript**             | Type-safe development              |
-| **Tailwind CSS**           | Styling and responsive UI          |
-| **Next.js API Routes**     | Backend planning API               |
-| **AI APIs**                | Itinerary generation               |
-| **Places / Location APIs** | Destination and place data         |
-| **Routing APIs**           | Routes and travel-time information |
-| **Weather APIs**           | Weather information                |
-| **Git & GitHub**           | Version control                    |
-| **Vercel**                 | Deployment                         |
+### Frontend
+
+* **Next.js 16**
+* **React 19**
+* **TypeScript**
+* **Tailwind CSS v4**
+* App Router
+
+### Backend
+
+* Next.js API Routes
+* TypeScript
+* Python bridge for Roost hotel search
+
+### AI
+
+* Google Gemini
+* `@google/genai`
+* Structured JSON generation
+
+### Travel Data
+
+* Geocoding API
+* Places API
+* Open-Meteo
+* Routing API
+* Roost / Google Hotels
+* SerpApi Google Hotels Photos
+
+### Maps
+
+* Leaflet
+* React Leaflet
+
+### Planned Infrastructure
+
+* Supabase
+* PostgreSQL
+* Supabase Auth
+* Vercel
+* Razorpay for future payments
 
 ---
 
-## 🏗️ Project Structure
+## 📂 Project Structure
 
 ```text
-stayora/
+steora/
 │
 ├── app/
 │   ├── api/
-│   │   └── travel-plan/
+│   │   ├── hotels/
+│   │   ├── travel-plan/
+│   │   └── ...
+│   │
 │   ├── login/
 │   ├── signup/
 │   ├── plan/
@@ -349,215 +295,182 @@ stayora/
 │
 ├── components/
 │   ├── planner/
-│   │   ├── BudgetInput.tsx
-│   │   ├── DateRangeInput.tsx
-│   │   ├── DestinationInput.tsx
-│   │   ├── InterestSelector.tsx
-│   │   └── TravelStyleSelector.tsx
-│   │
-│   └── planning/
-│       └── PlanningExperience.tsx
+│   ├── planning/
+│   ├── trip/
+│   ├── hotels/
+│   └── trips/
 │
 ├── lib/
+│   ├── ai/
 │   └── travel/
-│       ├── budget/
-│       ├── places/
-│       ├── routing/
-│       ├── weather/
-│       └── ...
 │
-├── types/
-│   └── trip.ts
+├── scripts/
+│   └── roost_bridge.py
 │
 ├── public/
 │
+├── types/
+│
+├── .env.local
 ├── package.json
-├── next.config.ts
-├── tsconfig.json
 └── README.md
 ```
 
-> The local project directory is currently named `stayora`, while the product is branded **Steora**.
+---
+
+## 🔐 Data Integrity
+
+A major design principle of Steora is:
+
+> **If reliable data is unavailable, Steora should say so instead of making it up.**
+
+The AI is instructed not to invent:
+
+* Places
+* Coordinates
+* Prices
+* Ratings
+* Opening hours
+* Travel distances
+* Travel times
+* Hotel information
+
+This is particularly important for a travel product where inaccurate information can directly affect real-world decisions.
 
 ---
 
-## 🔄 Product Flow
+## 🚧 Current Development Status
 
-```text
-Landing Page
-     ↓
-Login / Signup
-     ↓
-Trip Planner
-     ↓
-Travel Preferences
-     ↓
-Planning
-     ↓
-Travel Data Processing
-     ↓
-Constraint Evaluation
-     ↓
-AI Itinerary Generation
-     ↓
-Trip Details
-     ↓
-Saved Trips
-```
+### ✅ Currently Implemented
 
-Some parts of this flow are still under active development.
-
----
-
-## 🧠 Technical Decisions
-
-### Why TypeScript?
-
-Trip inputs, currencies, interests, travel preferences, itinerary data, and planning states use structured types to make the system easier to maintain as it grows.
-
-### Why separate AI from business logic?
-
-Budget calculations, travel-time constraints, filtering, and validation are deterministic problems.
-
-Keeping them outside the AI layer makes the system more predictable and testable.
-
-### Why normalize external data?
-
-Different APIs can return different structures.
-
-A normalized internal representation allows the rest of the planning system to work with consistent data.
-
-### Why validate generated plans?
-
-An AI-generated itinerary can be syntactically valid while still being unrealistic.
-
-Steora therefore evaluates the plan against user-defined constraints before considering it valid.
-
----
-
-## 📸 Project Preview
-
-Screenshots will be added as the major product flows are finalized.
-
-Planned previews:
-
-* Landing page
-* Trip planner
-* Planning state
-* Generated itinerary
-* Trip details
-* Saved trips
-
----
-
-## 🔄 Development Roadmap
-
-### ✅ Completed / Working
-
-* [x] Next.js project setup
-* [x] TypeScript configuration
-* [x] Trip planner UI
-* [x] Destination input
-* [x] Date selection
-* [x] Traveler selection
-* [x] Budget and currency input
-* [x] Interest selection
-* [x] Travel style selection
-* [x] Daily pace selection
-* [x] Maximum travel-time constraint
-* [x] Travel planning API structure
-* [x] Budget calculation logic
-* [x] Places data integration
-* [x] Weather data integration
-* [x] Travel-time calculations
-* [x] Route calculation structure
+* [x] Next.js application architecture
+* [x] Trip planner
+* [x] Destination geocoding
+* [x] Real place discovery
+* [x] Weather integration
+* [x] Real routing/travel-time calculation
+* [x] Place ranking
 * [x] Constraint evaluation
-* [x] Initial itinerary generation
+* [x] Budget analysis
+* [x] Google Gemini itinerary generation
+* [x] Structured AI output
+* [x] Interactive trip experience
+* [x] Hotel search
+* [x] Real hotel pricing
+* [x] Hotel ratings where supplied
+* [x] Hotel amenities where supplied
+* [x] Real hotel photos
+* [x] Hotel listing links
 
-### 🚧 In Progress
+### 🔨 In Progress
 
-* [ ] Improve itinerary quality
-* [ ] Improve budget-aware recommendations
-* [ ] Smarter replanning
-* [ ] Improve places integration
-* [ ] Improve route optimization
-* [ ] Complete trip detail experience
-* [ ] Saved trips
-* [ ] Authentication flow
-* [ ] Robust error handling
-* [ ] Improve API reliability
+* [ ] Hotel selection
+* [ ] Hotel as trip base
+* [ ] Hotel-to-activity routing
+* [ ] Core + optional activities
+* [ ] Budget trade-off UI
+* [ ] Budget optimization
+* [ ] Advanced itinerary replanning
+* [ ] Improved interactive map
+* [ ] Save trips
+* [ ] User accounts
+* [ ] Persistent trip history
 
 ### 🔮 Planned
 
-* [ ] Interactive maps
-* [ ] Hotel recommendations
-* [ ] Restaurant recommendations
-* [ ] Flight information
+* [ ] Supabase database
+* [ ] Authentication
+* [ ] Flight discovery
+* [ ] Trip sharing
 * [ ] Collaborative trip planning
-* [ ] Conversational AI travel assistant
-* [ ] Multi-destination trips
-* [ ] Mobile / PWA experience
+* [ ] Expense tracking
+* [ ] Packing lists
+* [ ] Persistent AI travel assistant
+* [ ] Natural-language trip editing
+* [ ] Automatic alternatives
+* [ ] Trip disruption handling
+* [ ] Production caching
+* [ ] Rate limiting
+* [ ] Monitoring
+* [ ] Automated testing
+* [ ] Production deployment
 
 ---
 
-## 🚀 Getting Started
+## 🧪 Example Planning Flow
 
-### 1. Clone the repository
+A traveler might enter:
 
-```bash
-git clone https://github.com/ShreyaSankpal/Stayora.git
+```text
+Destination: Mumbai
+Dates: 25 Sep – 28 Sep
+Travelers: 2
+Budget: ₹7,300
+
+Interests:
+Food
+Adventure
+Shopping
+Nightlife
+Photography
+
+Travel Style: Balanced
+Daily Pace: Moderate
 ```
 
-### 2. Navigate to the project
+Steora processes:
 
-```bash
-cd stayora
+```text
+Destination
+    ↓
+Geocoding
+    ↓
+Weather
+    ↓
+Real Places
+    ↓
+Travel Times
+    ↓
+Place Ranking
+    ↓
+Constraints
+    ↓
+Budget Analysis
+    ↓
+Gemini
+    ↓
+Validated Itinerary
 ```
 
-### 3. Install dependencies
-
-```bash
-npm install
-```
-
-### 4. Configure environment variables
-
-Create a `.env.local` file and add the required API credentials.
-
-```env
-# Add required API keys here
-```
-
-> Never commit API keys, secrets, or `.env.local` to GitHub.
-
-### 5. Start the development server
-
-```bash
-npm run dev
-```
-
-Open the local development URL provided by Next.js.
+If the requested budget cannot support the generated plan, Steora should expose the trade-off instead of pretending the trip fits.
 
 ---
 
-## 📌 Why I'm Building Steora
+## 🎯 Product Vision
 
-Steora is an exploration of how **AI, real-world APIs, structured data, deterministic business logic, and user constraints** can work together to solve a practical problem.
+Steora is being developed toward a system where a traveler can manage an entire trip from one place:
 
-The project is being developed incrementally, with each part of the planning pipeline being implemented, tested, and refined as the system evolves.
+```text
+Discover
+   ↓
+Plan
+   ↓
+Compare
+   ↓
+Optimize
+   ↓
+Book
+   ↓
+Track
+   ↓
+Replan
+   ↓
+Share
+```
+
+The long-term goal is to move beyond **AI itinerary generation** toward an **AI-powered travel planning and decision system**.
 
 ---
 
-## 👩‍💻 Author
-
-**Shreya Sankpal**
-
-Computer Engineering Student
-
-
-
----
-
-## 📄 Disclaimer
-
-Steora is currently a development project. Travel information, prices, routes, weather, and generated recommendations may be incomplete or inaccurate during development and should be independently verified before making real-world travel decisions.
+## 👩‍💻 Creator
+ 
