@@ -473,4 +473,23 @@ The long-term goal is to move beyond **AI itinerary generation** toward an **AI-
 ---
 
 ## 👩‍💻 Creator
- 
+  Shreya Sankpal
+
+Computer Engineering Student
+India
+
+Building Steora as a full-stack AI travel technology project focused on real-world data, intelligent planning, and dynamic replanning.
+
+📌 Project Status
+
+Steora is currently under active development.
+
+The architecture and core travel-planning pipeline are being built incrementally, with a focus on:
+
+Real APIs
+Reliable data
+AI-assisted planning
+Budget transparency
+Route intelligence
+Replanning
+Production-oriented architecture
