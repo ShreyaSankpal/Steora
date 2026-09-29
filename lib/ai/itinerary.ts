@@ -206,66 +206,73 @@ export async function generateItinerary(
   } 
 } 
  
-async function generateWithRetry(
-  prompt: string
-) {
-  const maxAttempts = 4;
+
+async function generateWithRetry(prompt: string) {
+  const models = [
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
+  ];
+
+  const maxAttemptsPerModel = 2;
 
   let lastError: unknown;
 
-  for (
-    let attempt = 1;
-    attempt <= maxAttempts;
-    attempt++
-  ) {
-    try {
-      console.log(
-        `Gemini request attempt ${attempt}/${maxAttempts}...`
-      );
+  for (const model of models) {
+    for (
+      let attempt = 1;
+      attempt <= maxAttemptsPerModel;
+      attempt++
+    ) {
+      try {
+        console.log(
+          `Gemini request using ${model} - attempt ${attempt}/${maxAttemptsPerModel}...`
+        );
 
-      return await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
+        return await ai.models.generateContent({
+          model,
 
-        contents: prompt,
+          contents: prompt,
 
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: itinerarySchema,
-        },
-      });
-    } catch (error) {
-      lastError = error;
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: itinerarySchema,
+          },
+        });
+      } catch (error) {
+        lastError = error;
 
-      console.error(
-        `Gemini request failed on attempt ${attempt}/${maxAttempts}.`,
-        error
-      );
+        console.error(
+          `Gemini request failed using ${model} on attempt ${attempt}/${maxAttemptsPerModel}.`,
+          error
+        );
 
-      if (attempt === maxAttempts) {
-        break;
+        if (attempt === maxAttemptsPerModel) {
+          console.log(
+            `${model} failed. Trying next model if available...`
+          );
+          break;
+        }
+
+        const delay =
+          attempt === 1
+            ? 3000
+            : 6000;
+
+        console.log(
+          `Waiting ${delay / 1000}s before retrying...`
+        );
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, delay)
+        );
       }
-
-      const delay =
-        attempt === 1
-          ? 3000
-          : attempt === 2
-            ? 6000
-            : 12000;
-
-      console.log(
-        `Waiting ${delay / 1000}s before retrying...`
-      );
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, delay)
-      );
     }
   }
 
   throw lastError instanceof Error
     ? lastError
     : new Error(
-        "Gemini itinerary generation failed after all retry attempts."
+        "Gemini itinerary generation failed after all model retries."
       );
 }
  
