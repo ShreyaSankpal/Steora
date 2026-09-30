@@ -7,6 +7,7 @@ import { BudgetBreakdownCard } from "./BudgetBreakdownCard";
 import { FeasibilityPanel } from "./FeasibilityPanel";
 import { ItineraryView } from "./ItineraryView";
 import { MapPlaceholder } from "./MapPlaceholder";
+import { NearbyPlaceDetails } from "./NearbyPlaceDetails";
 import { ReplanPanel } from "./ReplanPanel";
 import { TripHeader } from "./TripHeader";
 import { WeatherCard } from "./WeatherCard";
@@ -14,6 +15,8 @@ import { PreviewBanner } from "@/components/ui/PreviewBanner";
 
 export function TripExperience({ tripId }: { tripId: string }) {
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [selectedPlace, setSelectedPlace] =
+    useState<NonNullable<Trip["request"]["places"]>[number] | null>(null);
 
   useEffect(() => {
     const storedTrip = sessionStorage.getItem(
@@ -163,24 +166,31 @@ export function TripExperience({ tripId }: { tripId: string }) {
         trip.request.places.length > 0 ? (
           <div className="mt-5 flex gap-4 overflow-x-auto pb-2">
             {trip.request.places.map((place) => (
-              <div
+              <button
                 key={place.name}
-                className="group min-w-[240px] max-w-[280px] shrink-0 rounded-2xl border border-line bg-paper p-4 transition duration-200 hover:-translate-y-1 hover:border-accent/30 hover:shadow-md"
+                type="button"
+                onClick={() => setSelectedPlace(place)}
+                className="group min-w-[240px] max-w-[280px] shrink-0 rounded-2xl border border-line bg-paper p-4 text-left transition duration-200 hover:-translate-y-1 hover:border-accent/30 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <p className="line-clamp-2 font-semibold text-ink">
-                    {place.name}
-                  </p>
+                  <div className="min-w-0">
+                    <p className="line-clamp-2 font-semibold text-ink">
+                      {place.name}
+                    </p>
 
-                  <span className="mt-0.5 shrink-0 text-accent opacity-0 transition group-hover:opacity-100">
+                    <p className="mt-1 text-xs capitalize text-ink-muted">
+                      {place.category}
+                    </p>
+                  </div>
+
+                  <span className="mt-0.5 shrink-0 text-accent transition-transform group-hover:translate-x-1">
                     →
                   </span>
                 </div>
 
                 <div className="mt-4 space-y-1.5">
                   <p className="text-sm text-ink-muted">
-                    {place.distanceFromDestinationKm !==
-                    undefined
+                    {place.distanceFromDestinationKm !== undefined
                       ? `${place.distanceFromDestinationKm.toFixed(
                           1
                         )} km away`
@@ -196,7 +206,11 @@ export function TripExperience({ tripId }: { tripId: string }) {
                       : "Travel time unavailable"}
                   </p>
                 </div>
-              </div>
+
+                <div className="mt-4 border-t border-line pt-3 text-xs font-semibold text-accent">
+                  View place
+                </div>
+              </button>
             ))}
           </div>
         ) : (
@@ -285,6 +299,15 @@ export function TripExperience({ tripId }: { tripId: string }) {
           guests={trip.request.travelers}
         />
       </section>
+
+      {/* Nearby place details */}
+      {selectedPlace ? (
+        <NearbyPlaceDetails
+          place={selectedPlace}
+          destinationName={destinationName}
+          onClose={() => setSelectedPlace(null)}
+        />
+      ) : null}
     </div>
   );
 }
