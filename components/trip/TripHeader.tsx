@@ -4,44 +4,138 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export function TripHeader({ trip }: { trip: Trip }) {
   const destination =
-    trip.request.destination.name || trip.request.destination.query;
+    trip.request.destination.name ||
+    trip.request.destination.query;
 
   return (
-    <header className="rounded-2xl border border-line bg-paper-raised p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-ink-muted">
-            Generated trip
-          </p>
-          <h1 className="mt-2 font-display text-4xl tracking-tight">{destination}</h1>
-          <p className="mt-2 text-sm text-ink-muted">
-            {formatDateRange(trip.request.startDate, trip.request.endDate)}
-          </p>
+    <header className="overflow-hidden rounded-3xl border border-line bg-paper-raised shadow-sm">
+      {/* Top section */}
+      <div className="relative p-6 sm:p-8">
+        {/* Subtle brand accent */}
+        <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-accent via-cyan to-accent" />
+
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          {/* Destination */}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+                Your trip
+              </p>
+
+              <StatusBadge status={trip.status} />
+            </div>
+
+            <h1 className="mt-3 font-display text-4xl tracking-tight text-ink sm:text-5xl">
+              {destination}
+            </h1>
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-ink-muted">
+              <span>
+                {formatDateRange(
+                  trip.request.startDate,
+                  trip.request.endDate
+                )}
+              </span>
+
+              <span className="hidden text-line sm:inline">
+                •
+              </span>
+
+              <span>
+                {trip.request.travelers}{" "}
+                {trip.request.travelers === 1
+                  ? "traveler"
+                  : "travelers"}
+              </span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              className="rounded-xl border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition hover:border-accent hover:text-accent"
+            >
+              Save trip
+            </button>
+
+            <button
+              type="button"
+              className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-hover"
+            >
+              ✦ Change trip
+            </button>
+          </div>
         </div>
-        <StatusBadge status={trip.status} />
+
+        {/* Trip details */}
+        <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Budget */}
+          <div className="rounded-2xl border border-accent/15 bg-accent-soft/40 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-accent">
+              Budget
+            </p>
+
+            <p className="mt-2 text-lg font-semibold text-ink">
+              {formatMoney(
+                trip.request.budget,
+                trip.request.currency
+              )}
+            </p>
+
+            <p className="mt-1 text-xs text-ink-muted">
+              Total trip budget
+            </p>
+          </div>
+
+          {/* Travelers */}
+          <div className="rounded-2xl border border-line bg-paper p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Travelers
+            </p>
+
+            <p className="mt-2 text-lg font-semibold text-ink">
+              {trip.request.travelers}
+            </p>
+
+            <p className="mt-1 text-xs text-ink-muted">
+              {trip.request.travelers === 1
+                ? "Person"
+                : "People"}
+            </p>
+          </div>
+
+          {/* Travel style */}
+          <div className="rounded-2xl border border-line bg-paper p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Travel style
+            </p>
+
+            <p className="mt-2 text-lg font-semibold capitalize text-ink">
+              {trip.request.travelStyle.replace("-", " ")}
+            </p>
+
+            <p className="mt-1 text-xs text-ink-muted">
+              Your preferred style
+            </p>
+          </div>
+
+          {/* Pace */}
+          <div className="rounded-2xl border border-line bg-paper p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Daily pace
+            </p>
+
+            <p className="mt-2 text-lg font-semibold capitalize text-ink">
+              {trip.request.dailyPace}
+            </p>
+
+            <p className="mt-1 text-xs text-ink-muted">
+              Activities per day
+            </p>
+          </div>
+        </div>
       </div>
-      <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <dt className="text-ink-muted">Travelers</dt>
-          <dd className="mt-1 font-medium">{trip.request.travelers}</dd>
-        </div>
-        <div>
-          <dt className="text-ink-muted">Budget</dt>
-          <dd className="mt-1 font-medium">
-            {formatMoney(trip.request.budget, trip.request.currency)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-ink-muted">Travel style</dt>
-          <dd className="mt-1 font-medium capitalize">
-            {trip.request.travelStyle.replace("-", " ")}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-ink-muted">Pace</dt>
-          <dd className="mt-1 font-medium capitalize">{trip.request.dailyPace}</dd>
-        </div>
-      </dl>
     </header>
   );
 }

@@ -4,15 +4,25 @@ import type { HotelOption } from "@/lib/travel/hotels";
 
 interface HotelCardProps {
   hotel: HotelOption;
+  selected?: boolean;
+  onSelect?: (hotel: HotelOption) => void;
 }
 
 export default function HotelCard({
   hotel,
+  selected = false,
+  onSelect,
 }: HotelCardProps) {
   const image = hotel.images[0];
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+    <article
+      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
+        selected
+          ? "border-green-500 ring-2 ring-green-100"
+          : "border-gray-200"
+      }`}
+    >
       {image ? (
         <img
           src={image}
@@ -90,8 +100,7 @@ export default function HotelCard({
         {/* Price */}
         {hotel.price ? (
           <div className="mb-5 border-t border-gray-100 pt-4">
-            {hotel.price.nightlyPrice !==
-              undefined && (
+            {hotel.price.nightlyPrice !== undefined && (
               <p className="text-xl font-bold text-gray-900">
                 {hotel.price.currency}{" "}
                 {hotel.price.nightlyPrice.toLocaleString(
@@ -106,8 +115,7 @@ export default function HotelCard({
               </p>
             )}
 
-            {hotel.price.totalPrice !==
-              undefined && (
+            {hotel.price.totalPrice !== undefined && (
               <p className="mt-1 text-sm text-gray-500">
                 Total: {hotel.price.currency}{" "}
                 {hotel.price.totalPrice.toLocaleString(
@@ -128,17 +136,33 @@ export default function HotelCard({
           </p>
         )}
 
-        {/* Booking / listing */}
-        {hotel.url && (
-          <a
-            href={hotel.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full rounded-xl bg-black px-4 py-3 text-center text-sm font-medium text-white transition hover:opacity-90"
-          >
-            View on Google Hotels
-          </a>
-        )}
+        {/* Actions */}
+        <div className="space-y-2">
+          {onSelect && (
+            <button
+              type="button"
+              onClick={() => onSelect(hotel)}
+              className={`w-full rounded-xl px-4 py-3 text-sm font-medium transition ${
+                selected
+                  ? "bg-green-600 text-white"
+                  : "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              {selected ? "✓ Hotel selected" : "Select this hotel"}
+            </button>
+          )}
+
+          {hotel.url && (
+            <a
+              href={hotel.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-xl bg-black px-4 py-3 text-center text-sm font-medium text-white transition hover:opacity-90"
+            >
+              View on Google Hotels
+            </a>
+          )}
+        </div>
       </div>
     </article>
   );
