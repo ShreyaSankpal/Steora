@@ -112,6 +112,7 @@ export interface TravelPlace {
   name: string;
   coordinates: Coordinates;
   category: string;
+  placeId?: string;
 
   distanceFromDestinationKm?: number;
   travelTimeFromDestinationMinutes?: number;

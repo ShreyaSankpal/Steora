@@ -13,6 +13,9 @@ export function NearbyPlaceDetails({
   destinationName,
   onClose,
 }: NearbyPlaceDetailsProps) {
+
+    console.log("PLACE ID:", place.placeId);
+    
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${place.name}, ${place.coordinates.lat}, ${place.coordinates.lng}`
   )}`;

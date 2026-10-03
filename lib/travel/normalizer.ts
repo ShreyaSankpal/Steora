@@ -53,23 +53,24 @@ export function normalizeTravelData(
     weather,
 
     places: places.map((place) => {
-      const normalizedPlace: NormalizedPlace = {
-        name: place.name,
+     const normalizedPlace: NormalizedPlace = {
+  name: place.name,
 
-        coordinates: {
-          lat: place.latitude,
-          lng: place.longitude,
-        },
+  coordinates: {
+    lat: place.latitude,
+    lng: place.longitude,
+  },
 
-        category: place.category,
+  category: place.category,
+  placeId: place.placeId,
 
-        /*
-         * We do NOT have verified pricing yet.
-         * Therefore Steora must explicitly mark the
-         * price as unavailable instead of inventing one.
-         */
-        priceStatus: "unavailable" as PriceStatus,
-      };
+  /*
+   * We do NOT have verified pricing yet.
+   * Therefore Steora must explicitly mark the
+   * price as unavailable instead of inventing one.
+   */
+  priceStatus: "unavailable" as PriceStatus,
+};
 
       return normalizedPlace;
     }),

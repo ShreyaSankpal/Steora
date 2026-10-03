@@ -1,21 +1,47 @@
+"use client";
+
+import { useState } from "react";
 import { formatDateRange, formatMoney } from "@/lib/format";
 import type { Trip } from "@/types/trip";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export function TripHeader({ trip }: { trip: Trip }) {
+  const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const destination =
     trip.request.destination.name ||
     trip.request.destination.query;
 
+  function handleSave() {
+    localStorage.setItem(
+      `steora.saved-trip.${trip.id}`,
+      JSON.stringify(trip)
+    );
+
+    setSaved(true);
+  }
+
+  async function handleShare() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+
+      setCopied(true);
+
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch {
+      console.error("Failed to copy trip link.");
+    }
+  }
+
   return (
     <header className="overflow-hidden rounded-3xl border border-line bg-paper-raised shadow-sm">
-      {/* Top section */}
       <div className="relative p-6 sm:p-8">
-        {/* Subtle brand accent */}
         <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-accent via-cyan to-accent" />
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          {/* Destination */}
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
@@ -51,12 +77,21 @@ export function TripHeader({ trip }: { trip: Trip }) {
           </div>
 
           {/* Actions */}
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <button
               type="button"
+              onClick={handleSave}
               className="rounded-xl border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition hover:border-accent hover:text-accent"
             >
-              Save trip
+              {saved ? "✓ Trip saved" : "Save trip"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleShare}
+              className="rounded-xl border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition hover:border-accent hover:text-accent"
+            >
+              {copied ? "✓ Link copied" : "Share trip"}
             </button>
 
             <button
@@ -70,7 +105,6 @@ export function TripHeader({ trip }: { trip: Trip }) {
 
         {/* Trip details */}
         <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Budget */}
           <div className="rounded-2xl border border-accent/15 bg-accent-soft/40 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-accent">
               Budget
@@ -88,7 +122,6 @@ export function TripHeader({ trip }: { trip: Trip }) {
             </p>
           </div>
 
-          {/* Travelers */}
           <div className="rounded-2xl border border-line bg-paper p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
               Travelers
@@ -105,7 +138,6 @@ export function TripHeader({ trip }: { trip: Trip }) {
             </p>
           </div>
 
-          {/* Travel style */}
           <div className="rounded-2xl border border-line bg-paper p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
               Travel style
@@ -120,7 +152,6 @@ export function TripHeader({ trip }: { trip: Trip }) {
             </p>
           </div>
 
-          {/* Pace */}
           <div className="rounded-2xl border border-line bg-paper p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
               Daily pace
