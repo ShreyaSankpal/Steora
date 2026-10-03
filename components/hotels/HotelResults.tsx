@@ -9,6 +9,8 @@ interface HotelResultsProps {
   checkIn: string;
   checkOut: string;
   guests: number;
+  selectedHotelId?: string;
+  onSelectHotel?: (hotel: HotelOption) => void;
 }
 
 export default function HotelResults({
@@ -16,12 +18,12 @@ export default function HotelResults({
   checkIn,
   checkOut,
   guests,
+  selectedHotelId,
+  onSelectHotel,
 }: HotelResultsProps) {
   const [hotels, setHotels] = useState<HotelOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(
-    null
-  );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadHotels() {
@@ -122,6 +124,8 @@ export default function HotelResults({
           <HotelCard
             key={hotel.id}
             hotel={hotel}
+            selected={selectedHotelId === hotel.id}
+            onSelect={onSelectHotel}
           />
         ))}
       </div>

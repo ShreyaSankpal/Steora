@@ -1,6 +1,9 @@
 "use client";
 
 import HotelResults from "@/components/hotels/HotelResults";
+import { calculateBudgetBreakdown } from "@/lib/travel/budget";
+import { PreviewBanner } from "@/components/ui/PreviewBanner";
+import type { HotelOption } from "@/lib/travel/hotels";
 import { useEffect, useMemo, useState } from "react";
 import type { Trip } from "@/types/trip";
 import { BudgetBreakdownCard } from "./BudgetBreakdownCard";
@@ -11,12 +14,14 @@ import { NearbyPlaceDetails } from "./NearbyPlaceDetails";
 import { ReplanPanel } from "./ReplanPanel";
 import { TripHeader } from "./TripHeader";
 import { WeatherCard } from "./WeatherCard";
-import { PreviewBanner } from "@/components/ui/PreviewBanner";
 
 export function TripExperience({ tripId }: { tripId: string }) {
   const [trip, setTrip] = useState<Trip | null>(null);
+
   const [selectedPlace, setSelectedPlace] =
-    useState<NonNullable<Trip["request"]["places"]>[number] | null>(null);
+    useState<
+      NonNullable<Trip["request"]["places"]>[number] | null
+    >(null);
 
   useEffect(() => {
     const storedTrip = sessionStorage.getItem(
@@ -43,6 +48,49 @@ export function TripExperience({ tripId }: { tripId: string }) {
       trip.request.destination.query
     );
   }, [trip]);
+
+  function handleSelectHotel(hotel: HotelOption) {
+  if (!trip || !trip.itinerary) return;
+
+  const selectedHotel = {
+    id: hotel.id,
+    name: hotel.name,
+    platform: hotel.platform,
+    url: hotel.url,
+    totalPrice: hotel.price?.totalPrice,
+    nightlyPrice: hotel.price?.nightlyPrice,
+    nights: hotel.price?.nights,
+    currency: hotel.price?.currency,
+  };
+
+  /*
+   * Recalculate the trip budget using:
+   * - verified itinerary activity prices
+   * - the newly selected hotel price
+   *
+   * Unselected hotels are never included.
+   */
+  const budgetBreakdown =
+    calculateBudgetBreakdown(
+      trip.request,
+      trip.itinerary,
+      selectedHotel
+    );
+
+  const updatedTrip: Trip = {
+    ...trip,
+    selectedHotel,
+    budgetBreakdown,
+    updatedAt: new Date().toISOString(),
+  };
+
+  sessionStorage.setItem(
+    `stayora.trip.${trip.id}`,
+    JSON.stringify(updatedTrip)
+  );
+
+  setTrip(updatedTrip);
+}
 
   if (!trip) {
     return (
@@ -297,6 +345,8 @@ export function TripExperience({ tripId }: { tripId: string }) {
           checkIn={trip.request.startDate}
           checkOut={trip.request.endDate}
           guests={trip.request.travelers}
+          selectedHotelId={trip.selectedHotel?.id}
+          onSelectHotel={handleSelectHotel}
         />
       </section>
 

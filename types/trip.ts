@@ -294,6 +294,17 @@ export interface Trip {
   feasibility?: Feasibility;
   budgetBreakdown?: BudgetBreakdown;
   weather?: Weather[];
+
+  selectedHotel?: {
+    id: string;
+    name: string;
+    platform: string;
+    url?: string;
+    totalPrice?: number;
+    nightlyPrice?: number;
+    nights?: number;
+    currency?: string;
+  };
 }
 
 export interface PlanningStage {

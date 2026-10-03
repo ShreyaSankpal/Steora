@@ -37,6 +37,7 @@ export function TripPlanner() {
     setError("End date must be on or after the start date.");
     return;
   }
+  
 
   if (request.travelers < 1) {
     setError("There must be at least one traveler.");
