@@ -8,6 +8,15 @@ interface ActivityCardProps {
   currency: CurrencyCode;
 }
 
+const REASON_PRIORITY = [
+  "matches_interests",
+  "suitable_for_weather",
+  "matches_travel_style",
+  "fits_available_time",
+  "close_to_previous",
+  "fits_budget",
+] as const;
+
 export function ActivityCard({
   activity,
   currency,
@@ -15,6 +24,18 @@ export function ActivityCard({
   const hasVerifiedPrice =
     activity.cost !== undefined &&
     activity.costStatus === "verified";
+
+  const primaryReason =
+    [...activity.reasons]
+      .sort(
+        (a, b) =>
+          REASON_PRIORITY.indexOf(
+            a.code as (typeof REASON_PRIORITY)[number]
+          ) -
+          REASON_PRIORITY.indexOf(
+            b.code as (typeof REASON_PRIORITY)[number]
+          )
+      )[0];
 
   return (
     <article className="group rounded-2xl border border-line bg-paper p-4 transition duration-200 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md sm:p-5">
@@ -66,6 +87,25 @@ export function ActivityCard({
           )}
         </div>
       </div>
+
+      {/* Why Steora selected this */}
+      {primaryReason ? (
+        <div className="mt-4 rounded-xl border border-accent/10 bg-accent-soft/40 px-3.5 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">
+            Why this place?
+          </p>
+
+          <p className="mt-1 text-sm font-semibold text-ink">
+            ✓ {primaryReason.label}
+          </p>
+
+          {primaryReason.detail ? (
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
+              {primaryReason.detail}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3 text-xs text-ink-muted">
         <span>{activity.startTime}</span>
