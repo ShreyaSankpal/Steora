@@ -5,7 +5,8 @@ import { calculateBudgetBreakdown } from "@/lib/travel/budget";
 import { PreviewBanner } from "@/components/ui/PreviewBanner";
 import type { HotelOption } from "@/lib/travel/hotels";
 import { useEffect, useMemo, useState } from "react";
-import type { Trip } from "@/types/trip";
+import type {
+ Trip } from "@/types/trip";
 import { BudgetBreakdownCard } from "./BudgetBreakdownCard";
 import { FeasibilityPanel } from "./FeasibilityPanel";
 import { ItineraryView } from "./ItineraryView";

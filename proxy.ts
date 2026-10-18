@@ -1,43 +1,7 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            supabaseResponse.cookies.set(name, value, options);
-          });
-        },
-      },
-    },
-  );
-
- const { data } = await supabase.auth.getClaims();
-
-const isLoggedIn = !!data?.claims;
-  const isPlanPage = request.nextUrl.pathname.startsWith("/plan");
-
-  if (isPlanPage && !isLoggedIn) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-
-    return NextResponse.redirect(loginUrl);
-  }
-
-  return supabaseResponse;
+export function proxy(_request: NextRequest) {
+  return NextResponse.next();
 }
 
 export const config = {
