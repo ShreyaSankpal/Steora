@@ -1,5 +1,6 @@
 "use client";
 
+import { SmartPackingChecklist } from "./SmartPackingChecklist";
 import HotelResults from "@/components/hotels/HotelResults";
 import { calculateBudgetBreakdown } from "@/lib/travel/budget";
 import { PreviewBanner } from "@/components/ui/PreviewBanner";
@@ -15,6 +16,7 @@ import { NearbyPlaceDetails } from "./NearbyPlaceDetails";
 import { ReplanPanel } from "./ReplanPanel";
 import { TripHeader } from "./TripHeader";
 import { WeatherCard } from "./WeatherCard";
+
 
 export function TripExperience({ tripId }: { tripId: string }) {
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -314,13 +316,20 @@ export function TripExperience({ tripId }: { tripId: string }) {
         </div>
       </section>
 
+            {/* =========================================
+          SMART PACKING CHECKLIST
+          ========================================= */}
+      <SmartPackingChecklist trip={trip} />
+
       {/* =========================================
           REPLAN
           ========================================= */}
       <ReplanPanel
         tripId={trip.id}
         request={trip.request}
-      />
+      />      
+
+
 
       {/* =========================================
           HOTELS
