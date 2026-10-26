@@ -18,21 +18,52 @@ import type {
   TravelPlanApiResponse,
 } from "@/types/trip";
 
+type ErrorCode =
+  | "INVALID_REQUEST"
+  | "DESTINATION_NOT_FOUND"
+  | "INTERNAL_ERROR";
+
+function errorResponse(
+  message: string,
+  code: ErrorCode,
+  status: number
+): Response {
+  return Response.json({ error: message, code }, { status });
+}
+
 export async function POST(
   request: Request
 ): Promise<Response> {
-  const body: TravelPlanApiRequest =
-    await request.json();
+  let body: TravelPlanApiRequest;
 
-  const destinationQuery =
-    body.request.destination.query.trim();
-
-  if (!destinationQuery) {
-    return Response.json(
-      { error: "Destination is required" },
-      { status: 400 }
+  /*
+   * Parse the request body in its own try/catch, separate from the
+   * trip-generation pipeline. A malformed body must produce a clean
+   * INVALID_REQUEST (400) and must never reach the pipeline, where a
+   * SyntaxError would otherwise be indistinguishable from a real
+   * failure and would be misclassified.
+   */
+  try {
+    body = await request.json();
+  } catch {
+    return errorResponse(
+      "The request was malformed. Please check your inputs and try again.",
+      "INVALID_REQUEST",
+      400
     );
   }
+
+  try {
+    const destinationQuery =
+      body.request.destination.query.trim();
+
+    if (!destinationQuery) {
+      return errorResponse(
+        "Destination is required",
+        "INVALID_REQUEST",
+        400
+      );
+    }
 
   console.log("STEP 1: Starting geocoding");
 
@@ -41,11 +72,10 @@ const location =
 
 console.log("STEP 1: Geocoding completed");
   if (!location) {
-    return Response.json(
-      {
-        error: `Could not find destination: ${destinationQuery}`,
-      },
-      { status: 404 }
+    return errorResponse(
+      `Could not find destination: ${destinationQuery}`,
+      "DESTINATION_NOT_FOUND",
+      404
     );
   }
 
@@ -112,9 +142,11 @@ console.log("STEP 4: Routing completed");
    * Generate the AI itinerary using the ranked
    * real places.
    */
-  console.log("STEP 5: Starting Gemini");
+console.log(
+    "STEP 5: Starting Gemini"
+  );
 
-const aiPlan = await generateItinerary({
+  const aiPlan = await generateItinerary({
     request: body.request,
     weather: travelDataWithRoutes.weather,
     eligiblePlaces: rankedPlaces,
@@ -174,7 +206,7 @@ const aiPlan = await generateItinerary({
   budgetBreakdown.verifiedTotal,
   budgetBreakdown.isComplete,
   body.request.currency
-);
+  );
 
   const finalChecks =
     feasibility.checks.filter(
@@ -246,12 +278,27 @@ const aiPlan = await generateItinerary({
     budgetBreakdown,
   };
 
-  console.log(
-    "FINAL TRIP RESPONSE:",
-    JSON.stringify(trip, null, 2)
-  );
-
   return Response.json({ trip });
+  } catch {
+    /*
+     * Any unexpected failure in the trip-generation pipeline is
+     * reported generically as INTERNAL_ERROR (500). We deliberately do
+     * not inspect the thrown error here: whether the underlying cause is
+     * a downstream JSON parse, a provider failure, a configuration
+     * problem, or a bug, it is surfaced the same way so that no
+     * internal detail, stack trace, or provider body ever reaches the
+     * client.
+     */
+    console.error("Travel plan failed.", {
+      code: "INTERNAL_ERROR",
+    });
+
+    return errorResponse(
+      "We couldn't complete your trip plan. Please try again later.",
+      "INTERNAL_ERROR",
+      500
+    );
+  }
 }
 
 function getDayRoutePoints(
