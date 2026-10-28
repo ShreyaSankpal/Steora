@@ -18,8 +18,13 @@ import type {
   TravelPlanApiResponse,
 } from "@/types/trip";
 
+import {
+  validateTravelPlanRequest,
+  type ValidationErrorCode,
+} from "@/lib/validation/travel-plan";
+
 type ErrorCode =
-  | "INVALID_REQUEST"
+  | ValidationErrorCode
   | "DESTINATION_NOT_FOUND"
   | "INTERNAL_ERROR";
 
@@ -31,31 +36,212 @@ function errorResponse(
   return Response.json({ error: message, code }, { status });
 }
 
+/*
+ * Maximum accepted request body size, in bytes.
+ *
+ * A trip request is small (a few hundred fields at most),
+ * so 1 MB is generous while still bounding memory use.
+ */
+const MAX_REQUEST_BODY_BYTES = 1_000_000;
+
+/*
+ * Reads the request body in a bounded way.
+ *
+ * - Content-Type is checked first: only application/json is
+ *   accepted. A missing content-type is tolerated because some
+ *   clients omit it, but any other declared type is rejected
+ *   with 415 before any bytes are read.
+ * - Content-Length is used only as an early-rejection hint.
+ *   The real limit is enforced while streaming, so a client
+ *   cannot bypass it by lying about Content-Length.
+ * - The body is read exactly once and returned as parsed JSON,
+ *   ready for the runtime validator.
+ */
+async function readBoundedJsonBody(
+  request: Request
+): Promise<
+  | { ok: true; body: unknown }
+  | {
+      ok: false;
+      error: string;
+      code: ErrorCode;
+      status: number;
+    }
+> {
+  const contentType =
+    request.headers.get("content-type") ?? "";
+
+  if (
+    contentType &&
+    !contentType
+      .toLowerCase()
+      .includes("application/json")
+  ) {
+    return {
+      ok: false,
+      error:
+        "Unsupported content type. Only application/json is accepted.",
+      code: "UNSUPPORTED_MEDIA_TYPE",
+      status: 415,
+    };
+  }
+
+  const contentLengthHeader = request.headers.get(
+    "content-length"
+  );
+
+  if (contentLengthHeader) {
+    const declaredSize = Number(contentLengthHeader);
+
+    if (
+      Number.isFinite(declaredSize) &&
+      declaredSize > MAX_REQUEST_BODY_BYTES
+    ) {
+      return {
+        ok: false,
+        error: `Request body exceeds the maximum allowed size of ${MAX_REQUEST_BODY_BYTES} bytes.`,
+        code: "BODY_TOO_LARGE",
+        status: 413,
+      };
+    }
+  }
+
+  const reader = request.body?.getReader();
+
+  if (!reader) {
+    return {
+      ok: false,
+      error:
+        "The request was malformed. Please check your inputs and try again.",
+      code: "INVALID_REQUEST",
+      status: 400,
+    };
+  }
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  let oversized = false;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      if (!value) {
+        continue;
+      }
+
+      totalBytes += value.byteLength;
+
+      if (totalBytes > MAX_REQUEST_BODY_BYTES) {
+        oversized = true;
+        break;
+      }
+
+      chunks.push(value);
+    }
+  } catch {
+    return {
+      ok: false,
+      error:
+        "The request was malformed. Please check your inputs and try again.",
+      code: "INVALID_REQUEST",
+      status: 400,
+    };
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (oversized) {
+    return {
+      ok: false,
+      error: `Request body exceeds the maximum allowed size of ${MAX_REQUEST_BODY_BYTES} bytes.`,
+      code: "BODY_TOO_LARGE",
+      status: 413,
+    };
+  }
+
+  if (totalBytes === 0) {
+    return {
+      ok: false,
+      error:
+        "The request was malformed. Please check your inputs and try again.",
+      code: "INVALID_REQUEST",
+      status: 400,
+    };
+  }
+
+  const text = new TextDecoder().decode(
+    chunks.length === 1
+      ? chunks[0]
+      : concatUint8Arrays(chunks)
+  );
+
+  try {
+    return { ok: true, body: JSON.parse(text) };
+  } catch {
+    return {
+      ok: false,
+      error:
+        "The request was malformed. Please check your inputs and try again.",
+      code: "INVALID_REQUEST",
+      status: 400,
+    };
+  }
+}
+
+function concatUint8Arrays(
+  chunks: readonly Uint8Array[]
+): Uint8Array {
+  const total = chunks.reduce(
+    (sum, chunk) => sum + chunk.byteLength,
+    0
+  );
+  const result = new Uint8Array(total);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return result;
+}
+
 export async function POST(
   request: Request
 ): Promise<Response> {
-  let body: TravelPlanApiRequest;
+  const bodyResult = await readBoundedJsonBody(request);
 
-  /*
-   * Parse the request body in its own try/catch, separate from the
-   * trip-generation pipeline. A malformed body must produce a clean
-   * INVALID_REQUEST (400) and must never reach the pipeline, where a
-   * SyntaxError would otherwise be indistinguishable from a real
-   * failure and would be misclassified.
-   */
-  try {
-    body = await request.json();
-  } catch {
+  if (!bodyResult.ok) {
     return errorResponse(
-      "The request was malformed. Please check your inputs and try again.",
-      "INVALID_REQUEST",
-      400
+      bodyResult.error,
+      bodyResult.code,
+      bodyResult.status
     );
   }
 
+  const body = bodyResult.body as TravelPlanApiRequest;
+
+  const validation = validateTravelPlanRequest(body);
+
+  if (!validation.ok || !validation.value) {
+    const first = validation.errors[0] ?? {
+      code: "INVALID_REQUEST",
+      message:
+        "The request was malformed. Please check your inputs and try again.",
+    };
+    return errorResponse(first.message, first.code, 400);
+  }
+
+  const validatedBody = validation.value;
+
   try {
     const destinationQuery =
-      body.request.destination.query.trim();
+      validatedBody.request.destination.query.trim();
 
     if (!destinationQuery) {
       return errorResponse(
@@ -67,10 +253,10 @@ export async function POST(
 
   console.log("STEP 1: Starting geocoding");
 
-const location =
-  await geocodeDestination(destinationQuery);
+    const location =
+      await geocodeDestination(destinationQuery);
 
-console.log("STEP 1: Geocoding completed");
+    console.log("STEP 1: Geocoding completed");
   if (!location) {
     return errorResponse(
       `Could not find destination: ${destinationQuery}`,
@@ -84,8 +270,8 @@ console.log("STEP 1: Geocoding completed");
 const weather = await getWeather(
   location.latitude,
   location.longitude,
-  body.request.startDate,
-  body.request.endDate
+  validatedBody.request.startDate,
+  validatedBody.request.endDate
 );
 
 console.log("STEP 2: Weather completed");
@@ -120,7 +306,7 @@ console.log("STEP 4: Routing completed");
    * remove a place.
    */
   const rankedPlaces = rankPlaces(
-    body.request,
+    validatedBody.request,
     travelDataWithRoutes.places
   );
 
@@ -130,7 +316,7 @@ console.log("STEP 4: Routing completed");
    * before generating the itinerary.
    */
   const feasibility = evaluateConstraints(
-    body.request,
+    validatedBody.request,
     {
       ...travelDataWithRoutes,
       places: rankedPlaces,
@@ -147,7 +333,7 @@ console.log(
   );
 
   const aiPlan = await generateItinerary({
-    request: body.request,
+    request: validatedBody.request,
     weather: travelDataWithRoutes.weather,
     eligiblePlaces: rankedPlaces,
     routing: travelDataWithRoutes.routing,
@@ -180,7 +366,7 @@ console.log(
    */
   const budgetBreakdown =
     calculateBudgetBreakdown(
-      body.request,
+      validatedBody.request,
       aiPlan.itinerary
     );
 
@@ -201,11 +387,11 @@ console.log(
    * Validate the final known budget.
    */
   const budgetCheck = checkFinalBudget(
-  body.request.budget,
-  budgetBreakdown.estimatedTotal,
-  budgetBreakdown.verifiedTotal,
-  budgetBreakdown.isComplete,
-  body.request.currency
+    validatedBody.request.budget,
+    budgetBreakdown.estimatedTotal,
+    budgetBreakdown.verifiedTotal,
+    budgetBreakdown.isComplete,
+    validatedBody.request.currency
   );
 
   const finalChecks =
@@ -246,7 +432,7 @@ console.log(
    * request so the frontend can access them.
    */
   const resolvedRequest = {
-    ...body.request,
+    ...validatedBody.request,
     destination:
       travelDataWithRoutes.destination,
     weather:

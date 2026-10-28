@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai"; 
- 
+
 import type { 
   AIItineraryInput, 
   AIItineraryOutput, 
@@ -7,10 +7,21 @@ import type {
   Itinerary, 
   Weather, 
 } from "@/types/trip"; 
- 
+
 const ai = new GoogleGenAI({ 
   apiKey: process.env.GEMINI_API_KEY, 
 }); 
+
+/*
+ * Gemini generation timeout, in milliseconds.
+ *
+ * A structured itinerary response is typically produced in seconds,
+ * but a slow or overloaded model can stall. The per-model retry loop
+ * below already bounds the total wall-clock time; this timeout adds
+ * a hard cap on a single attempt so a hung request cannot occupy the
+ * worker indefinitely.
+ */
+const GEMINI_TIMEOUT_MS = 60_000;
  
 const activitySchema = { 
   type: Type.OBJECT, 
@@ -207,6 +218,41 @@ export async function generateItinerary(
 } 
  
 
+/*
+ * Wraps a single Gemini attempt in a hard timeout.
+ *
+ * The underlying SDK accepts `config.abortSignal` and threads it into
+ * the fetch it issues, so aborting the controller actually cancels the
+ * in-flight HTTP request and stops the SDK's own retry loop. A bare
+ * Promise.race would only reject the JS promise while the fetch kept
+ * running and retries accumulated in the background.
+ *
+ * The factory receives the signal so the attempt can attach it to its
+ * config. The timer is always cleared in finally, even if the promise
+ * resolves or rejects first.
+ */
+function withAbortTimeout<T>(
+  factory: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  const controller = new AbortController();
+
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  return factory(controller.signal).catch((error) => {
+    if (controller.signal.aborted) {
+      throw new Error(`${label} timed out after ${timeoutMs} ms.`);
+    }
+
+    throw error;
+  }).finally(() => {
+    clearTimeout(timeout);
+  });
+}
+
 async function generateWithRetry(prompt: string) {
   const models = [
     "gemini-3.1-flash-lite",
@@ -228,16 +274,22 @@ async function generateWithRetry(prompt: string) {
           `Gemini request using ${model} - attempt ${attempt}/${maxAttemptsPerModel}...`
         );
 
-        return await ai.models.generateContent({
-          model,
+        return await withAbortTimeout(
+          (signal) =>
+            ai.models.generateContent({
+              model,
 
-          contents: prompt,
+              contents: prompt,
 
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: itinerarySchema,
-          },
-        });
+              config: {
+                responseMimeType: "application/json",
+                responseSchema: itinerarySchema,
+                abortSignal: signal,
+              },
+            }),
+          GEMINI_TIMEOUT_MS,
+          `Gemini ${model} generation`
+        );
       } catch (error) {
         lastError = error;
 

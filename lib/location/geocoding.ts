@@ -1,9 +1,13 @@
+import { fetchWithTimeout } from "@/lib/http/fetchWithTimeout";
+
 export interface GeocodingResult {
   name: string;
   country: string;
   latitude: number;
   longitude: number;
 }
+
+const GEOCODING_TIMEOUT_MS = 10_000;
 
 export async function geocodeDestination(
   query: string
@@ -17,7 +21,9 @@ export async function geocodeDestination(
   url.searchParams.set("language", "en");
   url.searchParams.set("format", "json");
 
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url, undefined, {
+    timeoutMs: GEOCODING_TIMEOUT_MS,
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch destination data");

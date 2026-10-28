@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "@/lib/http/fetchWithTimeout";
+
 export interface PlaceResult {
   name: string;
   latitude: number;
@@ -32,6 +34,7 @@ const SEARCH_CATEGORIES = [
 ];
 
 const MAX_DISTANCE_KM = 50;
+const PLACES_TIMEOUT_MS = 15_000;
 
 export async function getPlaces(
   latitude: number,
@@ -107,7 +110,9 @@ async function searchPlaces(
   url.searchParams.set("lang", "en");
   url.searchParams.set("apiKey", apiKey);
 
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url, undefined, {
+    timeoutMs: PLACES_TIMEOUT_MS,
+  });
 
   if (!response.ok) {
     const errorText = await response.text();

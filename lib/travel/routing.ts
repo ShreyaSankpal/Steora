@@ -1,5 +1,7 @@
 import type { NormalizedTravelData } from "@/lib/travel/normalizer";
 
+import { fetchWithTimeout } from "@/lib/http/fetchWithTimeout";
+
 interface GeoapifyMatrixResponse {
   sources_to_targets?: Array<
     Array<{
@@ -19,6 +21,7 @@ interface GeoapifyRouteResponse {
 }
 
 const MAX_PLACE_MATRIX_SIZE = 1000;
+const ROUTE_TIMEOUT_MS = 20_000;
 
 export async function calculateTravelTimes(
   travelData: NormalizedTravelData
@@ -62,7 +65,7 @@ export async function calculateTravelTimes(
   // STEP 1: Destination -> every real place
   // --------------------------------------------------
 
-  const destinationResponse = await fetch(
+  const destinationResponse = await fetchWithTimeout(
     `https://api.geoapify.com/v1/routematrix?apiKey=${apiKey}`,
     {
       method: "POST",
@@ -75,7 +78,8 @@ export async function calculateTravelTimes(
         targets: placeCoordinates,
         units: "metric",
       }),
-    }
+    },
+    { timeoutMs: ROUTE_TIMEOUT_MS }
   );
 
   if (!destinationResponse.ok) {
@@ -168,7 +172,7 @@ export async function calculateTravelTimes(
   // STEP 3: Place -> place routing
   // --------------------------------------------------
 
-  const placeResponse = await fetch(
+  const placeResponse = await fetchWithTimeout(
     `https://api.geoapify.com/v1/routematrix?apiKey=${apiKey}`,
     {
       method: "POST",
@@ -181,7 +185,8 @@ export async function calculateTravelTimes(
         targets: routedPlaceCoordinates,
         units: "metric",
       }),
-    }
+    },
+    { timeoutMs: ROUTE_TIMEOUT_MS }
   );
 
   if (!placeResponse.ok) {
@@ -329,8 +334,10 @@ export async function calculateRouteGeometry(
     apiKey,
   });
 
-  const response = await fetch(
-    `https://api.geoapify.com/v1/routing?${params.toString()}`
+  const response = await fetchWithTimeout(
+    `https://api.geoapify.com/v1/routing?${params.toString()}`,
+    undefined,
+    { timeoutMs: ROUTE_TIMEOUT_MS }
   );
 
   if (!response.ok) {

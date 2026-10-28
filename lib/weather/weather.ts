@@ -13,6 +13,10 @@ export interface WeatherResult {
   daily: DailyWeather[];
 }
 
+import { fetchWithTimeout } from "@/lib/http/fetchWithTimeout";
+
+const WEATHER_TIMEOUT_MS = 15_000;
+
 export async function getWeather(
   latitude: number,
   longitude: number,
@@ -53,14 +57,14 @@ export async function getWeather(
     endDate
   );
 
-  
-
   url.searchParams.set(
     "timezone",
     "auto"
   );
 
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url, undefined, {
+    timeoutMs: WEATHER_TIMEOUT_MS,
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
