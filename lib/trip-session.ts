@@ -35,7 +35,7 @@ export function emptyTripRequest(): TripRequest {
     endDate: "",
     travelers: 2,
     budget: 2500,
-    currency: "USD",
+    currency: "INR",
     interests: [],
     travelStyle: "balanced",
     dailyPace: "moderate",
