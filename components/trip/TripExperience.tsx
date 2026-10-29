@@ -3,6 +3,8 @@
 import { SmartPackingChecklist } from "./SmartPackingChecklist";
 import HotelResults from "@/components/hotels/HotelResults";
 import { calculateBudgetBreakdown } from "@/lib/travel/budget";
+import { evaluateConstraints } from "@/lib/travel/constraints";
+import type { NormalizedTravelData } from "@/lib/travel/normalizer";
 import { PreviewBanner } from "@/components/ui/PreviewBanner";
 import type { HotelOption } from "@/lib/travel/hotels";
 import { useEffect, useMemo, useState } from "react";
@@ -25,6 +27,11 @@ export function TripExperience({ tripId }: { tripId: string }) {
     useState<
       NonNullable<Trip["request"]["places"]>[number] | null
     >(null);
+
+  const [showChangeDestination, setShowChangeDestination] =
+    useState(false);
+
+  const [newDestination, setNewDestination] = useState("");
 
   useEffect(() => {
     const storedTrip = sessionStorage.getItem(
@@ -95,6 +102,129 @@ export function TripExperience({ tripId }: { tripId: string }) {
   setTrip(updatedTrip);
 }
 
+function handleRemoveActivity(activityId: string) {
+  if (!trip || !trip.itinerary) return;
+
+  const updatedItinerary = {
+    ...trip.itinerary,
+    days: trip.itinerary.days.map((day) => ({
+      ...day,
+      segments: {
+        ...day.segments,
+        morning: day.segments.morning.filter((a) => a.id !== activityId),
+        afternoon: day.segments.afternoon.filter((a) => a.id !== activityId),
+        evening: day.segments.evening.filter((a) => a.id !== activityId),
+      },
+    })),
+  };
+
+  /*
+   * Recalculate the budget breakdown using the same rules as the
+   * initial planning pipeline. Only verified activity prices and the
+   * selected hotel (when its currency matches) contribute to verified
+   * totals; unknown prices remain unpriced and estimatedTotal stays
+   * null until every represented cost item has a verified price.
+   */
+  const budgetBreakdown = calculateBudgetBreakdown(
+    trip.request,
+    updatedItinerary,
+    trip.selectedHotel
+  );
+
+  /*
+   * Recalculate feasibility only when the calculation data is available
+   * in the saved trip. Legacy trips saved before this field existed
+   * lack weatherResult and routing; those trips keep their existing
+   * feasibility instead of being falsely marked feasible.
+   */
+  let feasibility = trip.feasibility;
+  if (trip.weatherResult && trip.routing) {
+    const normalizedData: NormalizedTravelData = {
+      destination: trip.request.destination,
+      weather: trip.weatherResult,
+      places: trip.request.places ?? [],
+      routing: trip.routing,
+    };
+    feasibility = evaluateConstraints(trip.request, normalizedData);
+  }
+
+  const updatedTrip: Trip = {
+    ...trip,
+    itinerary: updatedItinerary,
+    budgetBreakdown,
+    feasibility,
+    updatedAt: new Date().toISOString(),
+  };
+
+  sessionStorage.setItem(
+    `stayora.trip.${trip.id}`,
+    JSON.stringify(updatedTrip)
+  );
+
+  setTrip(updatedTrip);
+}
+
+function handleToggleCompletion(activityId: string) {
+  if (!trip || !trip.itinerary) return;
+
+  const updatedItinerary = {
+    ...trip.itinerary,
+    days: trip.itinerary.days.map((day) => ({
+      ...day,
+      segments: {
+        morning: day.segments.morning.map((a) =>
+          a.id === activityId ? { ...a, completed: !a.completed } : a
+        ),
+        afternoon: day.segments.afternoon.map((a) =>
+          a.id === activityId ? { ...a, completed: !a.completed } : a
+        ),
+        evening: day.segments.evening.map((a) =>
+          a.id === activityId ? { ...a, completed: !a.completed } : a
+        ),
+      },
+    })),
+  };
+
+  const updatedTrip: Trip = {
+    ...trip,
+    itinerary: updatedItinerary,
+    updatedAt: new Date().toISOString(),
+  };
+
+  sessionStorage.setItem(
+    `stayora.trip.${trip.id}`,
+    JSON.stringify(updatedTrip)
+  );
+
+  setTrip(updatedTrip);
+}
+
+function handleChangeTrip() {
+  setShowChangeDestination(true);
+  setNewDestination("");
+}
+
+function handleCloseChangeDestination() {
+  setShowChangeDestination(false);
+  setNewDestination("");
+}
+
+function handleAddDestination() {
+  if (!newDestination.trim()) return;
+  /*
+   * The re-plan pipeline does not support adding a destination to an
+   * existing trip. TripRequest.destination is a single Destination, and
+   * /api/travel-plan generates a brand-new trip from scratch. This UI
+   * captures the user's intended additional destination but does not
+   * modify the existing trip or call any API. True multi-destination
+   * planning requires a new endpoint, a destination array in
+   * TripRequest, and re-geocoding / re-places / re-routing for the
+    * added location.
+    */
+  setShowChangeDestination(false);
+  setNewDestination("");
+}
+
   if (!trip) {
     return (
       <p className="px-4 py-16 text-sm text-ink-muted">
@@ -111,7 +241,69 @@ export function TripExperience({ tripId }: { tripId: string }) {
       </PreviewBanner>
 
       {/* Trip header */}
-      <TripHeader trip={trip} />
+      <TripHeader trip={trip} onChangeTrip={handleChangeTrip} />
+
+      {showChangeDestination ? (
+        <section className="rounded-3xl border border-line bg-paper-raised shadow-sm sm:p-6">
+          <div className="mb-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+              Add destination
+            </p>
+            <h2 className="mt-1 font-display text-2xl text-ink">
+              Visit another destination
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Enter an additional destination to include in your trip. Your
+              existing itinerary is preserved while you enter details.
+            </p>
+          </div>
+
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleAddDestination();
+            }}
+            className="space-y-3"
+          >
+            <label className="block text-sm">
+              Destination
+              <input
+                type="text"
+                value={newDestination}
+                onChange={(event) =>
+                  setNewDestination(event.target.value)
+                }
+                placeholder="e.g. Kyoto, Japan"
+                className="mt-1 w-full rounded-xl border border-line bg-paper px-3 py-2"
+              />
+            </label>
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={!newDestination.trim()}
+                className="w-full rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper hover:bg-ink/90 disabled:bg-paper disabled:text-ink-muted disabled:cursor-not-allowed"
+              >
+                Add destination
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseChangeDestination}
+                className="w-full rounded-full border border-line bg-paper px-5 py-3 text-sm font-medium text-ink hover:border-accent/30"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-ink-muted">
+              Note: adding a destination to an existing trip requires a new
+              planning pipeline (geocoding, weather, places, routing, AI
+              itinerary generation). This button captures your request but
+              does not modify the current trip or call any travel API.
+            </p>
+          </form>
+        </section>
+      ) : null}
 
       {/* =========================================
           MAIN TRIP WORKSPACE
@@ -163,6 +355,8 @@ export function TripExperience({ tripId }: { tripId: string }) {
                 <ItineraryView
                   itinerary={trip.itinerary}
                   currency={trip.request.currency}
+                  onRemoveActivity={handleRemoveActivity}
+                  onToggleCompletion={handleToggleCompletion}
                 />
               ) : (
                 <div className="rounded-2xl border border-line bg-paper p-6 text-sm text-ink-muted">

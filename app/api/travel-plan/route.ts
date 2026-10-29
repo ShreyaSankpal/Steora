@@ -462,6 +462,8 @@ console.log(
     feasibility: finalFeasibility,
     itinerary: itineraryWithRoutes,
     budgetBreakdown,
+    weatherResult: travelDataWithRoutes.weather,
+    routing: travelDataWithRoutes.routing,
   };
 
   return Response.json({ trip });

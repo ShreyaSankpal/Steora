@@ -32,9 +32,13 @@ const SEGMENTS: {
 export function ItineraryDayCard({
   day,
   currency,
+  onRemoveActivity,
+  onToggleCompletion,
 }: {
   day: ItineraryDay;
   currency: CurrencyCode;
+  onRemoveActivity?: (id: string) => void;
+  onToggleCompletion?: (id: string) => void;
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-line bg-paper-raised shadow-sm">
@@ -121,6 +125,8 @@ export function ItineraryDayCard({
                             <ActivityCard
                               activity={activity}
                               currency={currency}
+                              onRemoveActivity={onRemoveActivity}
+                              onToggleCompletion={onToggleCompletion}
                             />
                           </div>
                         )

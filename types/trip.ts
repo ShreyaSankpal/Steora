@@ -4,6 +4,7 @@
  */
 
 import type { WeatherResult } from "@/lib/weather/weather";
+import type { RoutingData } from "@/lib/travel/normalizer";
 
 export type CurrencyCode =
   | "USD"
@@ -183,6 +184,8 @@ export interface Activity {
 
   reasons: RecommendationReason[];
 
+  completed?: boolean;
+
   source?: ActivitySource;
 }
 
@@ -294,6 +297,8 @@ export interface Trip {
   feasibility?: Feasibility;
   budgetBreakdown?: BudgetBreakdown;
   weather?: Weather[];
+  weatherResult?: WeatherResult;
+  routing?: RoutingData;
 
   selectedHotel?: {
     id: string;

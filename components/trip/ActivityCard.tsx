@@ -6,6 +6,8 @@ import type {
 interface ActivityCardProps {
   activity: Activity;
   currency: CurrencyCode;
+  onRemoveActivity?: (id: string) => void;
+  onToggleCompletion?: (id: string) => void;
 }
 
 const REASON_PRIORITY = [
@@ -20,6 +22,8 @@ const REASON_PRIORITY = [
 export function ActivityCard({
   activity,
   currency,
+  onRemoveActivity,
+  onToggleCompletion,
 }: ActivityCardProps) {
   const hasVerifiedPrice =
     activity.cost !== undefined &&
@@ -122,6 +126,31 @@ export function ActivityCard({
               Real price data
             </span>
           </>
+        ) : null}
+
+        {onToggleCompletion ? (
+          <button
+            type="button"
+            onClick={() => onToggleCompletion(activity.id)}
+            aria-pressed={activity.completed}
+            className={`rounded-full border px-2 py-0.5 text-xs font-medium transition ${
+              activity.completed
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-paper text-ink-muted"
+            }`}
+          >
+            {activity.completed ? "Done" : "Mark done"}
+          </button>
+        ) : null}
+
+        {onRemoveActivity ? (
+          <button
+            type="button"
+            onClick={() => onRemoveActivity(activity.id)}
+            className="text-xs font-medium text-ink-muted underline underline-offset-2 hover:text-accent"
+          >
+            Remove
+          </button>
         ) : null}
       </div>
     </article>

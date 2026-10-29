@@ -5,7 +5,13 @@ import { formatDateRange, formatMoney } from "@/lib/format";
 import type { Trip } from "@/types/trip";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
-export function TripHeader({ trip }: { trip: Trip }) {
+export function TripHeader({
+  trip,
+  onChangeTrip,
+}: {
+  trip: Trip;
+  onChangeTrip?: () => void;
+}) {
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -96,6 +102,7 @@ export function TripHeader({ trip }: { trip: Trip }) {
 
             <button
               type="button"
+              onClick={onChangeTrip}
               className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-hover"
             >
               ✦ Change trip
